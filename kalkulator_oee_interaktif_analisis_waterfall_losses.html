@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator OEE Interaktif — Analisis Efektivitas Mesin & Waterfall Losses</title>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom industrial range slider styling for crisp cross-browser precision */
+    input[type="range"].oee-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    input[type="range"].oee-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.15s ease;
+    }
+    input[type="range"].oee-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.14);
+      background: #2563eb;
+    }
+    input[type="range"].oee-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.15s ease;
+    }
+    input[type="range"].oee-slider::-moz-range-thumb:hover {
+      transform: scale(1.14);
+      background: #2563eb;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Smooth SVG bar transitions */
+    .wf-bar-rect {
+      transition: y 0.25s cubic-bezier(0.22, 1, 0.36, 1), height 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
+    }
+    .wf-bar-group:hover .wf-bar-rect {
+      filter: brightness(1.06);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- Top Navigation / Industrial Header -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-inner shrink-0">
+          <!-- Precision Gear / Gauge SVG Icon -->
+          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Kalkulator OEE & Analisis Waterfall Losses</h1>
+            <span class="text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30">TPM / Lean Suite</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Simulasi Overall Equipment Effectiveness, Six Big Losses, dan Deteksi Bottleneck Mesin</p>
+        </div>
+      </div>
+
+      <!-- Formula Pill & Quick Copy Report -->
+      <div class="flex items-center gap-2.5 self-start md:self-auto">
+        <div class="hidden sm:flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300">
+          <span class="text-slate-400">Rumus:</span>
+          <span class="text-emerald-400 font-semibold">OEE</span> =
+          <span class="text-rose-300">A</span> ×
+          <span class="text-amber-300">P</span> ×
+          <span class="text-orange-300">Q</span>
+        </div>
+        <button id="btnCopyReport" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xs font-medium text-slate-200 border border-slate-700 transition cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span>Salin Ringkasan</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Preset Scenario Bar -->
+    <section class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-blue-50 text-blue-600">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-600">Preset Skenario Cepat:</span>
+        </div>
+        <div id="presetContainer" class="flex flex-wrap items-center gap-2">
+          <button type="button" data-preset="standard" class="preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-slate-900 text-white border-slate-900 shadow-sm">
+            Contoh Standar (OEE 78,0%)
+          </button>
+          <button type="button" data-preset="worldclass" class="preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800">
+            World-Class OEE (86,4%)
+          </button>
+          <button type="button" data-preset="availability" class="preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-800">
+            Masalah Breakdown & Setup Tinggi
+          </button>
+          <button type="button" data-preset="performance" class="preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800">
+            Masalah Speed Loss & Minor Stops
+          </button>
+          <button type="button" data-preset="quality" class="preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-800">
+            Masalah Kualitas / Startup Reject
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Validation Warning Alert Banner (Hidden by default, shown if Performance > 100%) -->
+    <div id="validationBanner" class="hidden rounded-2xl bg-amber-50 border border-amber-300 p-4 shadow-sm">
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="text-xs sm:text-sm text-amber-900">
+          <p class="font-bold">Peringatan Validasi Fisik Produksi (Performance &gt; 100%)</p>
+          <p id="validationText" class="mt-0.5 text-amber-800 leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <!-- Card 1: OEE Overall -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">OEE Keseluruhan</p>
+            <div class="flex items-baseline gap-2 mt-1.5">
+              <span id="kpiOeeValue" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 tabular-nums">78,0%</span>
+            </div>
+          </div>
+          <span id="kpiOeeBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+            Baik
+          </span>
+        </div>
+        <div class="mt-4 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-500">Target World-Class: <strong class="text-slate-700">85,0%</strong></span>
+            <span id="kpiOeeDelta" class="font-mono font-semibold text-amber-600 tabular-nums">-7,0%</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden relative">
+            <!-- World-Class 85% marker -->
+            <div class="absolute top-0 bottom-0 left-[85%] w-0.5 bg-slate-900/40 z-10" title="Target World-Class 85%"></div>
+            <div id="kpiOeeBar" class="h-full rounded-full bg-blue-600 transition-all duration-300" style="width: 78%;"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+            <span>TEEP (vs Total Shift): <strong id="kpiTeepValue" class="text-slate-700 font-mono tabular-nums">73,1%</strong></span>
+            <span id="kpiFptInline" class="font-mono tabular-nums">351 / 450 mnt</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Availability -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Availability (A)</p>
+            </div>
+            <p id="kpiAvailValue" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1.5 tabular-nums">90,0%</p>
+          </div>
+          <span id="kpiAvailStatus" class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            ≥ 90,0% WC
+          </span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Planned Prod. Time:</span>
+            <span id="kpiPptVal" class="font-mono font-semibold text-slate-800 tabular-nums">450 mnt</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Operating Time:</span>
+            <span id="kpiOtVal" class="font-mono font-semibold text-slate-800 tabular-nums">405 mnt</span>
+          </div>
+          <div class="flex justify-between text-rose-600">
+            <span>Availability Loss:</span>
+            <span id="kpiAvailLossVal" class="font-mono font-semibold tabular-nums">-45 mnt</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Performance -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Performance (P)</p>
+            </div>
+            <p id="kpiPerfValue" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1.5 tabular-nums">88,9%</p>
+          </div>
+          <span id="kpiPerfStatus" class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            Target 95,0%
+          </span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Net Operating Time:</span>
+            <span id="kpiNotVal" class="font-mono font-semibold text-slate-800 tabular-nums">360 mnt</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Kecepatan Aktual:</span>
+            <span id="kpiActualRateVal" class="font-mono font-semibold text-slate-800 tabular-nums">1,78 unit/mnt</span>
+          </div>
+          <div class="flex justify-between text-amber-600">
+            <span>Speed / Minor Stop Loss:</span>
+            <span id="kpiPerfLossVal" class="font-mono font-semibold tabular-nums">-45 mnt</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Quality -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Quality (Q)</p>
+            </div>
+            <p id="kpiQualValue" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1.5 tabular-nums">97,5%</p>
+          </div>
+          <span id="kpiQualStatus" class="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            Target 99,9%
+          </span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Good Units / Reject:</span>
+            <span id="kpiGoodRejectVal" class="font-mono font-semibold text-slate-800 tabular-nums">702 / 18 unit</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Fully Productive Time:</span>
+            <span id="kpiFptVal" class="font-mono font-semibold text-emerald-700 tabular-nums">351 mnt</span>
+          </div>
+          <div class="flex justify-between text-orange-600">
+            <span>Quality Loss:</span>
+            <span id="kpiQualLossVal" class="font-mono font-semibold tabular-nums">-9 mnt</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Interactive Grid: Controls (Left) + Waterfall & Diagnosis (Right) -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Left Column: Parameter Input & Synchronized Sliders -->
+      <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3.5">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Parameter Data Produksi</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Ubah angka presisi atau geser slider secara real-time</p>
+          </div>
+          <button id="btnResetDefault" type="button" class="text-xs font-semibold text-blue-600 hover:text-blue-800 px-2.5 py-1.5 rounded-lg hover:bg-blue-50 transition cursor-pointer">
+            Reset Default
+          </button>
+        </div>
+
+        <!-- 1. Total Waktu Shift -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numTotalShift" class="text-xs sm:text-sm font-semibold text-slate-700">
+              1. Total Waktu Shift
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numTotalShift" type="number" min="60" max="1440" step="1" value="480"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">mnt</span>
+            </div>
+          </div>
+          <input id="rngTotalShift" type="range" min="60" max="1440" step="5" value="480" class="oee-slider" />
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>60 mnt (1 jam)</span>
+            <span id="lblShiftHours" class="text-slate-500 font-sans">Setara 8,00 jam</span>
+            <span>1.440 mnt (24 jam)</span>
+          </div>
+        </div>
+
+        <!-- 2. Jadwal Istirahat / Planned Maintenance -->
+        <div class="space-y-2 pt-1 border-t border-slate-100">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numPlannedStop" class="text-xs sm:text-sm font-semibold text-slate-700">
+              2. Jadwal Istirahat / Planned Stop
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numPlannedStop" type="number" min="0" max="300" step="1" value="30"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">mnt</span>
+            </div>
+          </div>
+          <input id="rngPlannedStop" type="range" min="0" max="300" step="1" value="30" class="oee-slider" />
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>0 mnt</span>
+            <span class="text-violet-600 font-sans font-medium">Planned Prod. Time: <strong id="lblSubPpt">450 mnt</strong></span>
+            <span id="lblMaxPlannedStop">Maks 300</span>
+          </div>
+        </div>
+
+        <!-- 3. Downtime / Unplanned & Setup Stop -->
+        <div class="space-y-2 pt-1 border-t border-slate-100">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numDowntime" class="text-xs sm:text-sm font-semibold text-slate-700">
+              3. Downtime (Breakdown & Setup)
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numDowntime" type="number" min="0" max="450" step="1" value="45"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">mnt</span>
+            </div>
+          </div>
+          <input id="rngDowntime" type="range" min="0" max="450" step="1" value="45" class="oee-slider" />
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>0 mnt</span>
+            <span class="text-sky-700 font-sans font-medium">Operating Time: <strong id="lblSubOt">405 mnt</strong></span>
+            <span id="lblMaxDowntime">Maks 450</span>
+          </div>
+        </div>
+
+        <!-- 4. Ideal Cycle Time -->
+        <div class="space-y-2 pt-1 border-t border-slate-100">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numCycleTime" class="text-xs sm:text-sm font-semibold text-slate-700">
+              4. Ideal Cycle Time
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numCycleTime" type="number" min="0.05" max="10.00" step="0.05" value="0.50"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">mnt</span>
+            </div>
+          </div>
+          <input id="rngCycleTime" type="range" min="0.05" max="10.00" step="0.05" value="0.50" class="oee-slider" />
+          <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-500">Ideal Run Rate:</span>
+            <span class="font-mono font-semibold text-slate-800 tabular-nums">
+              <span id="lblRateMin">2,00</span> unit/mnt &bull; <span id="lblRateHour">120,0</span> unit/jam
+            </span>
+          </div>
+        </div>
+
+        <!-- 5. Total Output Terproduksi -->
+        <div class="space-y-2 pt-1 border-t border-slate-100">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numTotalOutput" class="text-xs sm:text-sm font-semibold text-slate-700">
+              5. Total Output Terproduksi
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numTotalOutput" type="number" min="0" max="2000" step="1" value="720"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">unit</span>
+            </div>
+          </div>
+          <input id="rngTotalOutput" type="range" min="0" max="2000" step="1" value="720" class="oee-slider" />
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>0 unit</span>
+            <span class="text-slate-600 font-sans">Kapasitas Ideal OT: <strong id="lblIdealCapOt" class="font-mono">810 unit</strong></span>
+            <span>2.000</span>
+          </div>
+        </div>
+
+        <!-- 6. Produk Cacat / Reject & Rework -->
+        <div class="space-y-2 pt-1 border-t border-slate-100">
+          <div class="flex items-center justify-between gap-2">
+            <label for="numRejectUnits" class="text-xs sm:text-sm font-semibold text-slate-700">
+              6. Produk Cacat (Reject & Rework)
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input id="numRejectUnits" type="number" min="0" max="720" step="1" value="18"
+                class="w-24 px-2.5 py-1.5 text-right font-mono text-sm font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white tabular-nums" />
+              <span class="text-xs font-medium text-slate-500 w-8">unit</span>
+            </div>
+          </div>
+          <input id="rngRejectUnits" type="range" min="0" max="720" step="1" value="18" class="oee-slider" />
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>0 unit</span>
+            <span class="text-emerald-700 font-sans font-medium">Good Units: <strong id="lblSubGood" class="font-mono">702 unit</strong></span>
+            <span id="lblMaxReject">Maks 720</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Waterfall Chart + Bottleneck Diagnosis -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Interactive SVG Waterfall Chart Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Grafik Waterfall Kerugian Waktu Produksi</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Arahkan kursor atau ketuk batang untuk detail waktu & ekuivalen unit</p>
+            </div>
+            <!-- Legend Pills -->
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-medium">
+              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 text-slate-700">
+                <span class="w-2.5 h-2.5 rounded-sm bg-blue-600"></span> Subtotal Waktu
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-50 text-rose-700">
+                <span class="w-2.5 h-2.5 rounded-sm bg-rose-600"></span> Kerugian (Losses)
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700">
+                <span class="w-2.5 h-2.5 rounded-sm bg-emerald-600"></span> Produktif Murni
+              </span>
+            </div>
+          </div>
+
+          <!-- Responsive Scrollable SVG Container -->
+          <div class="relative w-full overflow-x-auto pb-2" id="waterfallWrapper">
+            <div class="min-w-[680px] relative">
+              <svg id="waterfallSvg" viewBox="0 0 820 370" class="w-full h-auto select-none overflow-visible" role="img" aria-label="Grafik Waterfall Kerugian Waktu Produksi OEE">
+                <!-- Dynamic SVG content injected via JS -->
+              </svg>
+
+              <!-- Floating Interactive Tooltip -->
+              <div id="wfTooltip" class="pointer-events-none opacity-0 transition-opacity duration-150 absolute z-20 w-64 bg-slate-900/95 backdrop-blur-sm text-white rounded-xl p-3.5 shadow-xl border border-slate-700 text-xs">
+                <div class="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-slate-700/80">
+                  <span id="ttTitle" class="font-bold text-white">Total Shift</span>
+                  <span id="ttBadge" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-700 text-slate-200">Awal</span>
+                </div>
+                <div class="space-y-1 font-mono text-[11px]">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400 font-sans">Durasi Waktu:</span>
+                    <span id="ttMinutes" class="font-bold text-white">480,0 mnt</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400 font-sans">% Total Shift:</span>
+                    <span id="ttPctShift" class="text-slate-200">100,0%</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400 font-sans">% Planned Prod.:</span>
+                    <span id="ttPctPpt" class="text-blue-300">106,7%</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400 font-sans">Ekuivalen Unit:</span>
+                    <span id="ttUnits" class="text-emerald-300">960 unit</span>
+                  </div>
+                </div>
+                <p id="ttDesc" class="mt-2 pt-1.5 border-t border-slate-800 text-[11px] text-slate-300 leading-snug font-sans"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Strip under Waterfall -->
+          <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            <div class="bg-slate-50 rounded-xl px-3 py-2 flex items-center justify-between">
+              <span class="text-slate-500">Total OEE Losses:</span>
+              <span id="wfTotalOeeLoss" class="font-mono font-bold text-rose-600 tabular-nums">99,0 mnt (22,0%)</span>
+            </div>
+            <div class="bg-emerald-50/70 border border-emerald-200/70 rounded-xl px-3 py-2 flex items-center justify-between">
+              <span class="text-emerald-800 font-medium">OEE (vs Planned):</span>
+              <span id="wfOeePct" class="font-mono font-bold text-emerald-700 tabular-nums">78,0%</span>
+            </div>
+            <div class="bg-blue-50/70 border border-blue-200/70 rounded-xl px-3 py-2 flex items-center justify-between">
+              <span class="text-blue-800 font-medium">TEEP (vs Total Shift):</span>
+              <span id="wfTeepPct" class="font-mono font-bold text-blue-700 tabular-nums">73,1%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automatic Bottleneck Diagnosis & World-Class Simulation Card -->
+        <div id="diagnosisCard" class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div id="diagIconBox" class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900">Diagnosis Bottleneck & Rekomendasi TPM</h2>
+                <p id="diagSubtitle" class="text-xs text-slate-500">Analisis otomatis pilar kerugian terbesar terhadap standar World-Class</p>
+              </div>
+            </div>
+            <span id="diagBottleneckPill" class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              Pilar Terlemah: Performance
+            </span>
+          </div>
+
+          <!-- Diagnosis Summary Explanation -->
+          <div id="diagSummaryBox" class="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Actionable Lean / TPM Recommendations -->
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rekomendasi Tindakan Perbaikan Spesifik:</p>
+            <ul id="diagActionsList" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <!-- Populated dynamically -->
+            </ul>
+          </div>
+
+          <!-- World-Class What-If Simulation Box -->
+          <div id="simulationBox" class="rounded-xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-emerald-50/70 border border-blue-200/80 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="space-y-1 text-xs">
+              <div class="flex items-center gap-1.5 font-bold text-blue-900">
+                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span>Simulasi Dampak ke Standar World-Class</span>
+              </div>
+              <p id="simDescription" class="text-slate-700 leading-relaxed">
+                <!-- Populated dynamically -->
+              </p>
+            </div>
+            <button id="btnApplySimulation" type="button" class="shrink-0 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-sm transition cursor-pointer">
+              Terapkan Simulasi
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Bottom Full-Width Table: Detailed Time & Unit Loss Breakdown -->
+    <section class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+      <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Tabel Rincian Alokasi Waktu & Kerugian Produksi</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Konversi menyeluruh antara durasi waktu (menit), rasio shift, dan ekuivalen unit produksi</p>
+        </div>
+        <span class="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg self-start sm:self-auto">
+          1 Unit = <strong id="tblCycleTimeRef" class="text-slate-800">0,50</strong> mnt
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr class="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="py-3.5 px-4 sm:px-6">Komponen Waterfall</th>
+              <th class="py-3.5 px-4">Kategori Six Big Losses / Peran</th>
+              <th class="py-3.5 px-4 text-right">Durasi (Menit)</th>
+              <th class="py-3.5 px-4 text-right">% Total Shift</th>
+              <th class="py-3.5 px-4 text-right">% Planned Prod.</th>
+              <th class="py-3.5 px-4 sm:px-6 text-right">Ekuivalen Unit</th>
+            </tr>
+          </thead>
+          <tbody id="breakdownTableBody" class="divide-y divide-slate-100 tabular-nums">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification (Replaces alert() cleanly) -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 translate-y-16 opacity-0 pointer-events-none transition-all duration-200 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="toastMessage">Ringkasan berhasil disalin ke clipboard!</span>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. STATE & PRESETS CONFIGURATION
+      // =========================================================================
+      const PRESETS = {
+        standard: {
+          name: 'Contoh Standar (OEE 78,0%)',
+          totalShift: 480,
+          plannedStop: 30,
+          downtime: 45,
+          idealCycleTime: 0.50,
+          totalOutput: 720,
+          rejectUnits: 18
+        },
+        worldclass: {
+          name: 'World-Class OEE (86,4%)',
+          totalShift: 480,
+          plannedStop: 30,
+          downtime: 45,
+          idealCycleTime: 0.45,
+          totalOutput: 864,
+          rejectUnits: 0
+        },
+        availability: {
+          name: 'Masalah Breakdown & Setup Tinggi',
+          totalShift: 480,
+          plannedStop: 30,
+          downtime: 135,
+          idealCycleTime: 0.50,
+          totalOutput: 580,
+          rejectUnits: 12
+        },
+        performance: {
+          name: 'Masalah Speed Loss & Minor Stops',
+          totalShift: 480,
+          plannedStop: 30,
+          downtime: 27,
+          idealCycleTime: 0.50,
+          totalOutput: 570,
+          rejectUnits: 10
+        },
+        quality: {
+          name: 'Masalah Kualitas / Startup Reject',
+          totalShift: 480,
+          plannedStop: 30,
+          downtime: 30,
+          idealCycleTime: 0.50,
+          totalOutput: 780,
+          rejectUnits: 140
+        }
+      };
+
+      let state = { ...PRESETS.standard };
+      let activePresetKey = 'standard';
+      let pendingSimulationState = null;
+
+      // Indonesian Number Formatters
+      const fmtInt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+      const fmtDec1 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const fmtDec2 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // =========================================================================
+      // 2. DOM ELEMENT REFERENCES
+      // =========================================================================
+      const inputs = {
+        numTotalShift: document.getElementById('numTotalShift'),
+        rngTotalShift: document.getElementById('rngTotalShift'),
+        numPlannedStop: document.getElementById('numPlannedStop'),
+        rngPlannedStop: document.getElementById('rngPlannedStop'),
+        numDowntime: document.getElementById('numDowntime'),
+        rngDowntime: document.getElementById('rngDowntime'),
+        numCycleTime: document.getElementById('numCycleTime'),
+        rngCycleTime: document.getElementById('rngCycleTime'),
+        numTotalOutput: document.getElementById('numTotalOutput'),
+        rngTotalOutput: document.getElementById('rngTotalOutput'),
+        numRejectUnits: document.getElementById('numRejectUnits'),
+        rngRejectUnits: document.getElementById('rngRejectUnits')
+      };
+
+      // =========================================================================
+      // 3. CORE OEE CALCULATION ENGINE
+      // =========================================================================
+      function sanitizeAndClampState() {
+        // 1. Total Shift: 60 - 1440
+        state.totalShift = Math.max(60, Math.min(1440, Math.round(Number(state.totalShift) || 60)));
+
+        // 2. Planned Stop: 0 - min(300, totalShift)
+        const maxPlannedStop = Math.min(300, state.totalShift);
+        state.plannedStop = Math.max(0, Math.min(maxPlannedStop, Math.round(Number(state.plannedStop) || 0)));
+
+        const ppt = Math.max(0, state.totalShift - state.plannedStop);
+
+        // 3. Downtime: 0 - ppt
+        state.downtime = Math.max(0, Math.min(ppt, Math.round(Number(state.downtime) || 0)));
+
+        // 4. Ideal Cycle Time: 0.05 - 10.00
+        let ict = Number(state.idealCycleTime);
+        if (isNaN(ict) || ict < 0.05) ict = 0.05;
+        if (ict > 10.0) ict = 10.0;
+        state.idealCycleTime = Math.round(ict * 100) / 100;
+
+        // 5. Total Output: 0 - 2000
+        state.totalOutput = Math.max(0, Math.min(2000, Math.round(Number(state.totalOutput) || 0)));
+
+        // 6. Reject Units: 0 - totalOutput
+        state.rejectUnits = Math.max(0, Math.min(state.totalOutput, Math.round(Number(state.rejectUnits) || 0)));
+      }
+
+      function calculateMetrics(s) {
+        const totalShift = s.totalShift;
+        const plannedStop = s.plannedStop;
+        const ppt = Math.max(0, totalShift - plannedStop); // Planned Production Time
+        const downtime = s.downtime; // Availability Loss
+        const ot = Math.max(0, ppt - downtime); // Operating Time
+        const ict = s.idealCycleTime;
+        const totalOutput = s.totalOutput;
+        const rejectUnits = s.rejectUnits;
+        const goodUnits = Math.max(0, totalOutput - rejectUnits);
+
+        // Run rates
+        const idealRatePerMin = 1 / ict;
+        const idealRatePerHour = 60 / ict;
+        const idealCapacityInOt = Math.floor(ot / ict);
+
+        // Time metrics
+        const netOperatingTime = totalOutput * ict;
+        const perfLossMin = ot - netOperatingTime; // Can be negative if Performance > 100%
+        const fullyProductiveTime = goodUnits * ict;
+        const qualLossMin = rejectUnits * ict; // netOperatingTime - fullyProductiveTime
+
+        // Pillars (ratios 0..1+)
+        const availability = ppt > 0 ? ot / ppt : 0;
+        const performance = ot > 0 ? netOperatingTime / ot : (totalOutput > 0 ? 9.99 : 0);
+        const quality = totalOutput > 0 ? goodUnits / totalOutput : 0;
+
+        // OEE & TEEP
+        const oee = ppt > 0 ? fullyProductiveTime / ppt : 0;
+        const teep = totalShift > 0 ? fullyProductiveTime / totalShift : 0;
+
+        // Actual run rate in Operating Time
+        const actualRatePerMin = ot > 0 ? totalOutput / ot : 0;
+
+        // Validation flag: Net Operating Time > Operating Time (Performance > 100%)
+        const isOverSpeedInvalid = (ot > 0 && netOperatingTime > ot + 0.001) || (ot === 0 && totalOutput > 0);
+
+        return {
+          totalShift,
+          plannedStop,
+          ppt,
+          downtime,
+          ot,
+          ict,
+          totalOutput,
+          rejectUnits,
+          goodUnits,
+          idealRatePerMin,
+          idealRatePerHour,
+          idealCapacityInOt,
+          actualRatePerMin,
+          netOperatingTime,
+          perfLossMin,
+          fullyProductiveTime,
+          qualLossMin,
+          availability,
+          performance,
+          quality,
+          oee,
+          teep,
+          isOverSpeedInvalid
+        };
+      }
+
+      // =========================================================================
+      // 4. SYNC INPUT CONTROLS & DYNAMIC BOUNDS
+      // =========================================================================
+      function syncInputsFromState(m) {
+        const maxPlannedStop = Math.min(300, state.totalShift);
+        inputs.numPlannedStop.max = maxPlannedStop;
+        inputs.rngPlannedStop.max = maxPlannedStop;
+
+        inputs.numDowntime.max = m.ppt;
+        inputs.rngDowntime.max = m.ppt;
+
+        inputs.numRejectUnits.max = state.totalOutput;
+        inputs.rngRejectUnits.max = state.totalOutput;
+
+        inputs.numTotalShift.value = state.totalShift;
+        inputs.rngTotalShift.value = state.totalShift;
+
+        inputs.numPlannedStop.value = state.plannedStop;
+        inputs.rngPlannedStop.value = state.plannedStop;
+
+        inputs.numDowntime.value = state.downtime;
+        inputs.rngDowntime.value = state.downtime;
+
+        inputs.numCycleTime.value = state.idealCycleTime.toFixed(2);
+        inputs.rngCycleTime.value = state.idealCycleTime.toFixed(2);
+
+        inputs.numTotalOutput.value = state.totalOutput;
+        inputs.rngTotalOutput.value = state.totalOutput;
+
+        inputs.numRejectUnits.value = state.rejectUnits;
+        inputs.rngRejectUnits.value = state.rejectUnits;
+
+        // Helper sub-labels
+        document.getElementById('lblShiftHours').textContent = `Setara ${fmtDec2.format(state.totalShift / 60)} jam`;
+        document.getElementById('lblMaxPlannedStop').textContent = `Maks ${fmtInt.format(maxPlannedStop)}`;
+        document.getElementById('lblSubPpt').textContent = `${fmtInt.format(m.ppt)} mnt`;
+        document.getElementById('lblMaxDowntime').textContent = `Maks ${fmtInt.format(m.ppt)}`;
+        document.getElementById('lblSubOt').textContent = `${fmtInt.format(m.ot)} mnt`;
+        document.getElementById('lblRateMin').textContent = fmtDec2.format(m.idealRatePerMin);
+        document.getElementById('lblRateHour').textContent = fmtDec1.format(m.idealRatePerHour);
+        document.getElementById('lblIdealCapOt').textContent = `${fmtInt.format(m.idealCapacityInOt)} unit`;
+        document.getElementById('lblSubGood').textContent = `${fmtInt.format(m.goodUnits)} unit`;
+        document.getElementById('lblMaxReject').textContent = `Maks ${fmtInt.format(state.totalOutput)}`;
+      }
+
+      // =========================================================================
+      // 5. UPDATE KPI CARDS & VALIDATION BANNER
+      // =========================================================================
+      function updateKpiCards(m) {
+        const oeePct = m.oee * 100;
+        const availPct = m.availability * 100;
+        const perfPct = m.performance * 100;
+        const qualPct = m.quality * 100;
+        const teepPct = m.teep * 100;
+
+        // Validation banner
+        const banner = document.getElementById('validationBanner');
+        const valText = document.getElementById('validationText');
+        if (m.isOverSpeedInvalid) {
+          banner.classList.remove('hidden');
+          valText.textContent = `Net Operating Time (${fmtDec1.format(m.netOperatingTime)} mnt) melebihi Operating Time (${fmtDec1.format(m.ot)} mnt), sehingga Performance tercatat ${fmtDec1.format(perfPct)}% (> 100%). Periksa kembali apakah Ideal Cycle Time (${fmtDec2.format(m.ict)} mnt/unit) terlalu besar atau Total Output (${fmtInt.format(m.totalOutput)} unit) melebihi kapasitas fisik mesin.`;
+        } else {
+          banner.classList.add('hidden');
+        }
+
+        // Card 1: OEE Overall
+        document.getElementById('kpiOeeValue').textContent = `${fmtDec1.format(oeePct)}%`;
+        document.getElementById('kpiTeepValue').textContent = `${fmtDec1.format(teepPct)}%`;
+        document.getElementById('kpiFptInline').textContent = `${fmtDec1.format(m.fullyProductiveTime)} / ${fmtInt.format(m.ppt)} mnt`;
+
+        const badge = document.getElementById('kpiOeeBadge');
+        const bar = document.getElementById('kpiOeeBar');
+        const deltaEl = document.getElementById('kpiOeeDelta');
+
+        const deltaWc = oeePct - 85.0;
+        deltaEl.textContent = `${deltaWc >= 0 ? '+' : ''}${fmtDec1.format(deltaWc)}%`;
+        deltaEl.className = `font-mono font-semibold tabular-nums ${deltaWc >= 0 ? 'text-emerald-600' : 'text-amber-600'}`;
+
+        bar.style.width = `${Math.max(0, Math.min(100, oeePct))}%`;
+
+        if (oeePct >= 85.0) {
+          badge.textContent = 'World-Class';
+          badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0';
+          bar.className = 'h-full rounded-full bg-emerald-500 transition-all duration-300';
+        } else if (oeePct >= 70.0) {
+          badge.textContent = 'Baik';
+          badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 shrink-0';
+          bar.className = 'h-full rounded-full bg-blue-600 transition-all duration-300';
+        } else if (oeePct >= 55.0) {
+          badge.textContent = 'Perlu Perbaikan';
+          badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0';
+          bar.className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+        } else {
+          badge.textContent = 'Kritis';
+          badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 shrink-0';
+          bar.className = 'h-full rounded-full bg-rose-600 transition-all duration-300';
+        }
+
+        // Card 2: Availability
+        document.getElementById('kpiAvailValue').textContent = `${fmtDec1.format(availPct)}%`;
+        const availStatus = document.getElementById('kpiAvailStatus');
+        if (availPct >= 90.0) {
+          availStatus.textContent = '≥ 90,0% WC';
+          availStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        } else {
+          availStatus.textContent = 'Target 90,0%';
+          availStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+        }
+        document.getElementById('kpiPptVal').textContent = `${fmtInt.format(m.ppt)} mnt`;
+        document.getElementById('kpiOtVal').textContent = `${fmtInt.format(m.ot)} mnt`;
+        document.getElementById('kpiAvailLossVal').textContent = m.downtime > 0 ? `-${fmtInt.format(m.downtime)} mnt` : '0 mnt';
+
+        // Card 3: Performance
+        document.getElementById('kpiPerfValue').textContent = `${fmtDec1.format(perfPct)}%`;
+        const perfStatus = document.getElementById('kpiPerfStatus');
+        if (perfPct >= 95.0 && perfPct <= 100.0) {
+          perfStatus.textContent = '≥ 95,0% WC';
+          perfStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        } else if (perfPct > 100.0) {
+          perfStatus.textContent = '> 100% Cek Data';
+          perfStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300';
+        } else {
+          perfStatus.textContent = 'Target 95,0%';
+          perfStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200';
+        }
+        document.getElementById('kpiNotVal').textContent = `${fmtDec1.format(m.netOperatingTime)} mnt`;
+        document.getElementById('kpiActualRateVal').textContent = `${fmtDec2.format(m.actualRatePerMin)} unit/mnt`;
+        const perfLossSign = m.perfLossMin > 0 ? '-' : (m.perfLossMin < 0 ? '+' : '');
+        document.getElementById('kpiPerfLossVal').textContent = `${perfLossSign}${fmtDec1.format(Math.abs(m.perfLossMin))} mnt`;
+
+        // Card 4: Quality
+        document.getElementById('kpiQualValue').textContent = `${fmtDec1.format(qualPct)}%`;
+        const qualStatus = document.getElementById('kpiQualStatus');
+        if (qualPct >= 99.9) {
+          qualStatus.textContent = '≥ 99,9% WC';
+          qualStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        } else {
+          qualStatus.textContent = 'Target 99,9%';
+          qualStatus.className = 'px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-orange-50 text-orange-700 border border-orange-200';
+        }
+        document.getElementById('kpiGoodRejectVal').textContent = `${fmtInt.format(m.goodUnits)} / ${fmtInt.format(m.rejectUnits)} unit`;
+        document.getElementById('kpiFptVal').textContent = `${fmtDec1.format(m.fullyProductiveTime)} mnt`;
+        document.getElementById('kpiQualLossVal').textContent = m.qualLossMin > 0 ? `-${fmtDec1.format(m.qualLossMin)} mnt` : '0 mnt';
+      }
+
+      // =========================================================================
+      // 6. CUSTOM INTERACTIVE SVG WATERFALL CHART
+      // =========================================================================
+      function renderWaterfallChart(m) {
+        const svg = document.getElementById('waterfallSvg');
+        const chartW = 820;
+        const chartH = 370;
+        const padLeft = 58;
+        const padRight = 22;
+        const padTop = 36;
+        const padBottom = 64;
+        const plotW = chartW - padLeft - padRight;
+        const plotH = chartH - padTop - padBottom;
+
+        // Build 9 Waterfall Steps in exact order requested
+        const steps = [
+          {
+            id: 'totalShift',
+            label1: 'Total',
+            label2: 'Shift',
+            type: 'start',
+            badge: 'Waktu Total',
+            start: 0,
+            end: m.totalShift,
+            delta: m.totalShift,
+            color: '#334155', // Slate 700
+            desc: 'Total waktu kalender yang dijadwalkan untuk shift produksi ini.'
+          },
+          {
+            id: 'plannedStop',
+            label1: '(-) Planned',
+            label2: 'Stop',
+            type: 'loss',
+            badge: 'Planned Stop',
+            start: m.ppt,
+            end: m.totalShift,
+            delta: -m.plannedStop,
+            color: '#8b5cf6', // Violet 500
+            desc: 'Istirahat terjadwal, briefing, atau preventive maintenance rutin (tidak mengurangi OEE, namun mengurangi TEEP).'
+          },
+          {
+            id: 'ppt',
+            label1: 'Planned',
+            label2: 'Prod. Time',
+            type: 'subtotal',
+            badge: 'Basis OEE',
+            start: 0,
+            end: m.ppt,
+            delta: m.ppt,
+            color: '#2563eb', // Blue 600
+            desc: 'Waktu produksi bersih yang direncanakan (denominator utama dalam rumus OEE).'
+          },
+          {
+            id: 'availLoss',
+            label1: '(-) Avail.',
+            label2: 'Loss',
+            type: 'loss',
+            badge: 'Availability Loss',
+            start: m.ot,
+            end: m.ppt,
+            delta: -m.downtime,
+            color: '#e11d48', // Rose 600
+            desc: 'Kerugian akibat Unplanned Stops (kerusakan mesin/breakdown) dan Setup/Changeover.'
+          },
+          {
+            id: 'ot',
+            label1: 'Operating',
+            label2: 'Time',
+            type: 'subtotal',
+            badge: 'Waktu Operasi',
+            start: 0,
+            end: m.ot,
+            delta: m.ot,
+            color: '#0284c7', // Sky 600
+            desc: 'Waktu aktual saat mesin benar-benar berjalan dan beroperasi.'
+          },
+          {
+            id: 'perfLoss',
+            label1: '(-) Perf.',
+            label2: 'Loss',
+            type: 'loss',
+            badge: m.perfLossMin >= 0 ? 'Performance Loss' : 'Over-Speed (+)',
+            start: Math.min(m.ot, m.netOperatingTime),
+            end: Math.max(m.ot, m.netOperatingTime),
+            delta: -m.perfLossMin,
+            color: m.perfLossMin >= 0 ? '#f59e0b' : '#14b8a6', // Amber 500
+            desc: 'Kerugian waktu akibat penurunan kecepatan siklus (Speed Loss) dan berhenti singkat (Minor Stops / Idling).'
+          },
+          {
+            id: 'not',
+            label1: 'Net Oper.',
+            label2: 'Time',
+            type: 'subtotal',
+            badge: 'Waktu Siklus Ideal',
+            start: 0,
+            end: m.netOperatingTime,
+            delta: m.netOperatingTime,
+            color: '#0891b2', // Cyan 600
+            desc: 'Waktu teoritis yang dibutuhkan untuk memproduksi seluruh unit output pada kecepatan desain ideal.'
+          },
+          {
+            id: 'qualLoss',
+            label1: '(-) Quality',
+            label2: 'Loss',
+            type: 'loss',
+            badge: 'Quality Loss',
+            start: m.fullyProductiveTime,
+            end: m.netOperatingTime,
+            delta: -m.qualLossMin,
+            color: '#ea580c', // Orange 600
+            desc: 'Waktu terbuang untuk memproduksi unit cacat (reject/scrap) maupun unit yang memerlukan rework.'
+          },
+          {
+            id: 'fpt',
+            label1: 'Fully Prod.',
+            label2: 'Time',
+            type: 'final',
+            badge: 'Nilai OEE Murni',
+            start: 0,
+            end: m.fullyProductiveTime,
+            delta: m.fullyProductiveTime,
+            color: '#059669', // Emerald 600
+            desc: `Waktu produktif murni yang menghasilkan produk lolos kualitas (OEE = ${fmtDec1.format(m.oee * 100)}% dari PPT, TEEP = ${fmtDec1.format(m.teep * 100)}% dari Total Shift).`
+          }
+        ];
+
+        // Determine nice Y-Axis Maximum
+        const rawMax = Math.max(m.totalShift, m.netOperatingTime, 60);
+        const stepCandidates = [10, 20, 30, 50, 60, 100, 120, 150, 200, 240, 300];
+        let tickStep = 100;
+        for (const c of stepCandidates) {
+          if (Math.ceil(rawMax / c) <= 6) {
+            tickStep = c;
+            break;
+          }
+        }
+        const yMax = Math.ceil(rawMax / tickStep) * tickStep;
+
+        const yToPx = (val) => padTop + plotH - (Math.max(0, val) / yMax) * plotH;
+
+        let svgMarkup = '';
+
+        // 1. Horizontal Gridlines & Y-Axis Ticks
+        for (let v = 0; v <= yMax; v += tickStep) {
+          const y = yToPx(v);
+          svgMarkup += `
+            <line x1="${padLeft}" y1="${y}" x2="${chartW - padRight}" y2="${y}" stroke="${v === 0 ? '#94a3b8' : '#e2e8f0'}" stroke-width="${v === 0 ? '1.5' : '1'}" ${v > 0 ? 'stroke-dasharray="4 4"' : ''} />
+            <text x="${padLeft - 10}" y="${y + 4}" text-anchor="end" fill="#64748b" font-size="11" font-family="JetBrains Mono, monospace">${fmtInt.format(v)}</text>
+          `;
+        }
+
+        // Y-Axis vertical title
+        svgMarkup += `
+          <text x="15" y="${padTop + plotH / 2}" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" transform="rotate(-90, 15, ${padTop + plotH / 2})">Menit Produksi</text>
+        `;
+
+        // 2. Bars & Connector Lines
+        const slotW = plotW / steps.length;
+        const barW = Math.min(54, slotW * 0.64);
+
+        steps.forEach((step, idx) => {
+          const centerX = padLeft + slotW * idx + slotW / 2;
+          const barX = centerX - barW / 2;
+          const topVal = Math.max(step.start, step.end);
+          const botVal = Math.min(step.start, step.end);
+          const topY = yToPx(topVal);
+          const botY = yToPx(botVal);
+          const rectH = Math.max(2, botY - topY);
+
+          // Connector line to next bar
+          if (idx < steps.length - 1) {
+            const nextCenterX = padLeft + slotW * (idx + 1) + slotW / 2;
+            const nextBarX = nextCenterX - barW / 2;
+            // Level where current step ends
+            const bridgeVal = (step.type === 'loss') ? step.start : step.end;
+            const bridgeY = yToPx(bridgeVal);
+            svgMarkup += `
+              <line x1="${barX + barW}" y1="${bridgeY}" x2="${nextBarX}" y2="${bridgeY}" stroke="#94a3b8" stroke-width="1.25" stroke-dasharray="3 3" />
+            `;
+          }
+
+          // Format top value label
+          let valLabel = '';
+          if (step.type === 'loss') {
+            if (Math.abs(step.delta) < 0.05) {
+              valLabel = '0';
+            } else {
+              const sign = step.delta > 0 ? '+' : '-';
+              const absVal = Math.abs(step.delta);
+              valLabel = `${sign}${Number.isInteger(absVal) ? fmtInt.format(absVal) : fmtDec1.format(absVal)}`;
+            }
+          } else {
+            valLabel = Number.isInteger(step.end) ? fmtInt.format(step.end) : fmtDec1.format(step.end);
+          }
+
+          // Inside bar percentage callout for Final FPT bar if tall enough
+          let insideFinalCallout = '';
+          if (step.id === 'fpt' && rectH >= 46) {
+            const midY = topY + rectH / 2;
+            insideFinalCallout = `
+              <text x="${centerX}" y="${midY - 3}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="800" font-family="JetBrains Mono, monospace">${fmtDec1.format(m.oee * 100)}%</text>
+              <text x="${centerX}" y="${midY + 10}" text-anchor="middle" fill="#d1fae5" font-size="9.5" font-weight="600">OEE</text>
+            `;
+          }
+
+          svgMarkup += `
+            <g class="wf-bar-group cursor-pointer" data-step-idx="${idx}">
+              <!-- Invisible wider hit target for effortless mobile tapping & hovering -->
+              <rect x="${barX - 8}" y="${padTop}" width="${barW + 16}" height="${plotH + 45}" fill="transparent" />
+              <!-- Actual Waterfall Bar -->
+              <rect class="wf-bar-rect" x="${barX}" y="${topY}" width="${barW}" height="${rectH}" rx="5" fill="${step.color}" />
+              ${insideFinalCallout}
+              <!-- Value Label Above Bar -->
+              <text x="${centerX}" y="${topY - 7}" text-anchor="middle" fill="${step.type === 'loss' ? step.color : '#1e293b'}" font-size="11.5" font-weight="700" font-family="JetBrains Mono, monospace">${valLabel}</text>
+              <!-- X-Axis 2-Line Labels -->
+              <text x="${centerX}" y="${padTop + plotH + 19}" text-anchor="middle" fill="#334155" font-size="11" font-weight="600">${step.label1}</text>
+              <text x="${centerX}" y="${padTop + plotH + 33}" text-anchor="middle" fill="#475569" font-size="11" font-weight="600">${step.label2}</text>
+            </g>
+          `;
+        });
+
+        svg.innerHTML = svgMarkup;
+
+        // Update summary strip beneath waterfall
+        const totalOeeLossMin = Math.max(0, m.ppt - m.fullyProductiveTime);
+        const totalOeeLossPct = m.ppt > 0 ? (totalOeeLossMin / m.ppt) * 100 : 0;
+        document.getElementById('wfTotalOeeLoss').textContent = `${fmtDec1.format(totalOeeLossMin)} mnt (${fmtDec1.format(totalOeeLossPct)}%)`;
+        document.getElementById('wfOeePct').textContent = `${fmtDec1.format(m.oee * 100)}%`;
+        document.getElementById('wfTeepPct').textContent = `${fmtDec1.format(m.teep * 100)}%`;
+
+        // Attach hover/touch tooltip listeners to SVG bar groups
+        attachWaterfallTooltipEvents(steps, m);
+      }
+
+      function attachWaterfallTooltipEvents(steps, m) {
+        const svg = document.getElementById('waterfallSvg');
+        const tooltip = document.getElementById('wfTooltip');
+        const groups = svg.querySelectorAll('.wf-bar-group');
+
+        const showTooltip = (idx, clientX, clientY) => {
+          const step = steps[idx];
+          if (!step) return;
+
+          const dur = Math.abs(step.delta);
+          const signPrefix = (step.type === 'loss' && step.delta < 0) ? '-' : (step.type === 'loss' && step.delta > 0 ? '+' : '');
+          const pctShift = m.totalShift > 0 ? (dur / m.totalShift) * 100 : 0;
+          const pctPpt = m.ppt > 0 ? (dur / m.ppt) * 100 : 0;
+          const eqUnits = m.ict > 0 ? dur / m.ict : 0;
+
+          document.getElementById('ttTitle').textContent = `${step.label1} ${step.label2}`.replace('(-) ', '');
+          document.getElementById('ttBadge').textContent = step.badge;
+          document.getElementById('ttMinutes').textContent = `${signPrefix}${fmtDec1.format(dur)} mnt`;
+          document.getElementById('ttPctShift').textContent = `${fmtDec1.format(pctShift)}%`;
+          document.getElementById('ttPctPpt').textContent = `${fmtDec1.format(pctPpt)}%`;
+          document.getElementById('ttUnits').textContent = `${signPrefix}${fmtDec1.format(eqUnits)} unit`;
+          document.getElementById('ttDesc').textContent = step.desc;
+
+          // Position tooltip relative to SVG container
+          const containerRect = svg.parentElement.getBoundingClientRect();
+          let leftPos = clientX - containerRect.left + 14;
+          let topPos = clientY - containerRect.top - 24;
+
+          // Prevent overflow on right edge
+          if (leftPos + 265 > containerRect.width) {
+            leftPos = Math.max(8, clientX - containerRect.left - 270);
+          }
+          // Prevent overflow on top/bottom
+          topPos = Math.max(8, Math.min(containerRect.height - 150, topPos));
+
+          tooltip.style.left = `${leftPos}px`;
+          tooltip.style.top = `${topPos}px`;
+          tooltip.classList.remove('opacity-0');
+        };
+
+        const hideTooltip = () => {
+          tooltip.classList.add('opacity-0');
+        };
+
+        groups.forEach((g) => {
+          const idx = Number(g.getAttribute('data-step-idx'));
+          g.addEventListener('mousemove', (e) => showTooltip(idx, e.clientX, e.clientY));
+          g.addEventListener('mouseenter', (e) => showTooltip(idx, e.clientX, e.clientY));
+          g.addEventListener('mouseleave', hideTooltip);
+          g.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches[0]) {
+              showTooltip(idx, e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }, { passive: true });
+        });
+      }
+
+      // =========================================================================
+      // 7. BOTTLENECK DIAGNOSIS & WORLD-CLASS SIMULATION ENGINE
+      // =========================================================================
+      function updateDiagnosisAndSimulation(m) {
+        const availPct = m.availability * 100;
+        const perfPct = m.performance * 100;
+        const qualPct = m.quality * 100;
+
+        // Calculate gaps against World-Class targets (90.0%, 95.0%, 99.9%)
+        const pillars = [
+          {
+            key: 'availability',
+            name: 'Availability',
+            actualPct: availPct,
+            targetPct: 90.0,
+            gapPct: Math.max(0, 90.0 - availPct),
+            lossMin: m.downtime,
+            lossUnits: m.ict > 0 ? m.downtime / m.ict : 0,
+            colorClass: 'bg-rose-100 text-rose-800 border-rose-200',
+            iconBg: 'bg-rose-100 text-rose-700',
+            actions: [
+              { title: 'Terapkan SMED', desc: 'Pisahkan setup internal ke eksternal untuk memangkas waktu changeover > 50%.' },
+              { title: 'Preventive Maintenance', desc: 'Jadwalkan inspeksi komponen kritis berbasis MTBF untuk mencegah breakdown mendadak.' },
+              { title: 'Autonomous Maintenance', desc: 'Berdayakan operator melakukan pengecekan harian (cleaning, lubrication, tightening).' }
+            ]
+          },
+          {
+            key: 'performance',
+            name: 'Performance',
+            actualPct: perfPct,
+            targetPct: 95.0,
+            gapPct: Math.max(0, 95.0 - perfPct),
+            lossMin: Math.max(0, m.perfLossMin),
+            lossUnits: m.ict > 0 ? Math.max(0, m.perfLossMin) / m.ict : 0,
+            colorClass: 'bg-amber-100 text-amber-800 border-amber-200',
+            iconBg: 'bg-amber-100 text-amber-700',
+            actions: [
+              { title: 'Eliminasi Micro-Stoppages', desc: 'Catat frekuensi sensor trip, material jamming, dan hambatan feeder berdurasi < 5 menit.' },
+              { title: 'Restorasi Ideal Cycle Time', desc: 'Kalibrasi kecepatan mesin sesuai spesifikasi desain OEM dan hilangkan perlambatan manual.' },
+              { title: 'Standarisasi Suplai Material', desc: 'Pastikan aliran bahan baku dan pergantian gulungan/komponen tanpa jeda tunggu.' }
+            ]
+          },
+          {
+            key: 'quality',
+            name: 'Quality',
+            actualPct: qualPct,
+            targetPct: 99.9,
+            gapPct: Math.max(0, 99.9 - qualPct),
+            lossMin: m.qualLossMin,
+            lossUnits: m.rejectUnits,
+            colorClass: 'bg-orange-100 text-orange-800 border-orange-200',
+            iconBg: 'bg-orange-100 text-orange-700',
+            actions: [
+              { title: 'Poka-Yoke (Anti-Salah)', desc: 'Pasang sensor deteksi cacat otomatis & jig pembatas agar kesalahan proses langsung terhenti.' },
+              { title: 'Validasi Parameter Startup', desc: 'Kunci resep temperatur, tekanan, dan kecepatan awal shift untuk menekan startup reject.' },
+              { title: 'First-Article Inspection', desc: 'Terapkan pengecekan ketat 5 unit pertama setelah changeover sebelum produksi massal.' }
+            ]
+          }
+        ];
+
+        // Sort pillars by highest gap to World-Class first, then by highest lost minutes
+        const sorted = [...pillars].sort((a, b) => {
+          if (Math.abs(b.gapPct - a.gapPct) > 0.2) return b.gapPct - a.gapPct;
+          return b.lossMin - a.lossMin;
+        });
+
+        const weakest = sorted[0];
+        const allWorldClass = pillars.every((p) => p.gapPct <= 0.01) && (m.oee * 100 >= 85.0);
+
+        const diagPill = document.getElementById('diagBottleneckPill');
+        const diagIconBox = document.getElementById('diagIconBox');
+        const diagSummaryBox = document.getElementById('diagSummaryBox');
+        const diagActionsList = document.getElementById('diagActionsList');
+        const simBox = document.getElementById('simulationBox');
+        const simDescription = document.getElementById('simDescription');
+        const btnApplySim = document.getElementById('btnApplySimulation');
+
+        if (allWorldClass) {
+          diagPill.textContent = 'Status: World-Class Benchmark';
+          diagPill.className = 'self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+          diagIconBox.className = 'w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0';
+
+          diagSummaryBox.innerHTML = `
+            Seluruh pilar efektivitas mesin telah melampaui standar <strong>World-Class OEE (≥ 85,0%)</strong> dengan capaian aktual <strong>${fmtDec1.format(m.oee * 100)}%</strong>. Fokus utama tim produksi adalah mempertahankan stabilitas proses dan memperluas standar ke lini lainnya.
+          `;
+
+          diagActionsList.innerHTML = `
+            <li class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+              <p class="font-bold text-emerald-900">1. Kaizen Berkelanjutan</p>
+              <p class="text-slate-600 mt-1">Audit deviasi mikro harian agar OEE tetap stabil di atas 85%.</p>
+            </li>
+            <li class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+              <p class="font-bold text-emerald-900">2. Predictive Maintenance</p>
+              <p class="text-slate-600 mt-1">Gunakan analisis tren getaran/suhu untuk mencegah keausan komponen.</p>
+            </li>
+            <li class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+              <p class="font-bold text-emerald-900">3. Standardisasi Lintas Shift</p>
+              <p class="text-slate-600 mt-1">Replikasi parameter setting terbaik ke seluruh operator & shift kerja.</p>
+            </li>
+          `;
+
+          simBox.classList.add('hidden');
+          pendingSimulationState = null;
+          return;
+        }
+
+        // Bottleneck detected
+        diagPill.textContent = `Pilar Terlemah: ${weakest.name} (${fmtDec1.format(weakest.actualPct)}%)`;
+        diagPill.className = `self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold border ${weakest.colorClass}`;
+        diagIconBox.className = `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${weakest.iconBg}`;
+
+        diagSummaryBox.innerHTML = `
+          Kerugian terbesar terhadap standar World-Class berada pada pilar <strong>${weakest.name}</strong> (aktual <strong>${fmtDec1.format(weakest.actualPct)}%</strong> vs standar <strong>${fmtDec1.format(weakest.targetPct)}%</strong>, selisih <strong>-${fmtDec1.format(weakest.gapPct)}%</strong>). Pilar ini menyumbang kehilangan waktu produktif sebesar <strong>${fmtDec1.format(weakest.lossMin)} menit</strong> atau setara <strong>${fmtDec1.format(weakest.lossUnits)} unit produk</strong> dalam shift ini.
+        `;
+
+        diagActionsList.innerHTML = weakest.actions.map((act, i) => `
+          <li class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+            <p class="font-bold text-slate-900">${i + 1}. ${act.title}</p>
+            <p class="text-slate-600 mt-1 leading-relaxed">${act.desc}</p>
+          </li>
+        `).join('');
+
+        // Compute What-If Simulation when weakest pillar reaches World-Class target
+        const simState = { ...state };
+        if (weakest.key === 'availability') {
+          // Target OT = 0.90 * PPT => downtime = round(0.10 * PPT)
+          const targetOt = 0.90 * m.ppt;
+          simState.downtime = Math.max(0, Math.round(m.ppt - targetOt));
+        } else if (weakest.key === 'performance') {
+          // Target NOT = 0.95 * OT => totalOutput = round((0.95 * OT) / ICT)
+          const targetOutput = Math.min(2000, Math.round((0.95 * m.ot) / m.ict));
+          simState.totalOutput = Math.max(state.totalOutput, targetOutput);
+        } else if (weakest.key === 'quality') {
+          // Target Quality >= 99.9% => max reject = floor(0.001 * totalOutput)
+          simState.rejectUnits = Math.floor(0.001 * m.totalOutput);
+        }
+
+        const simMetrics = calculateMetrics(simState);
+        const oeeGainPct = (simMetrics.oee - m.oee) * 100;
+        const unitGain = simMetrics.goodUnits - m.goodUnits;
+
+        if (oeeGainPct > 0.05 || unitGain > 0) {
+          simBox.classList.remove('hidden');
+          pendingSimulationState = simState;
+          simDescription.innerHTML = `
+            Jika pilar <strong>${weakest.name}</strong> ditingkatkan ke standar World-Class (<strong>${fmtDec1.format(weakest.targetPct)}%</strong>), nilai OEE naik dari <strong>${fmtDec1.format(m.oee * 100)}%</strong> menjadi <strong class="text-emerald-700">${fmtDec1.format(simMetrics.oee * 100)}%</strong> (<strong>+${fmtDec1.format(oeeGainPct)}%</strong>), menghasilkan tambahan <strong class="text-blue-700">+${fmtInt.format(unitGain)} unit baik</strong> per shift.
+          `;
+        } else {
+          simBox.classList.add('hidden');
+          pendingSimulationState = null;
+        }
+      }
+
+      // =========================================================================
+      // 8. DETAILED BREAKDOWN TABLE RENDERER
+      // =========================================================================
+      function updateBreakdownTable(m) {
+        document.getElementById('tblCycleTimeRef').textContent = fmtDec2.format(m.ict);
+
+        const rows = [
+          {
+            name: '1. Total Waktu Shift',
+            category: 'Waktu Kalender Terjadwal',
+            min: m.totalShift,
+            isLoss: false,
+            isHighlight: false,
+            badgeColor: 'bg-slate-200 text-slate-800'
+          },
+          {
+            name: '2. (-) Jadwal Istirahat / Planned Stop',
+            category: 'Planned Maintenance & Istirahat (TEEP Factor)',
+            min: -m.plannedStop,
+            isLoss: true,
+            isHighlight: false,
+            badgeColor: 'bg-violet-100 text-violet-800'
+          },
+          {
+            name: '3. Planned Production Time (PPT)',
+            category: 'Basis Waktu Operasi Terencana (100% OEE Base)',
+            min: m.ppt,
+            isLoss: false,
+            isHighlight: true,
+            badgeColor: 'bg-blue-100 text-blue-800'
+          },
+          {
+            name: '4. (-) Availability Loss (Downtime)',
+            category: 'Unplanned Stops (Breakdown) & Setup/Changeover',
+            min: -m.downtime,
+            isLoss: true,
+            isHighlight: false,
+            badgeColor: 'bg-rose-100 text-rose-800'
+          },
+          {
+            name: '5. Operating Time (OT)',
+            category: `Waktu Jalan Aktual (Availability = ${fmtDec1.format(m.availability * 100)}%)`,
+            min: m.ot,
+            isLoss: false,
+            isHighlight: true,
+            badgeColor: 'bg-sky-100 text-sky-800'
+          },
+          {
+            name: '6. (-) Performance Loss',
+            category: 'Speed Loss & Minor Stops / Idling',
+            min: -m.perfLossMin,
+            isLoss: true,
+            isHighlight: false,
+            badgeColor: 'bg-amber-100 text-amber-800'
+          },
+          {
+            name: '7. Net Operating Time (NOT)',
+            category: `Waktu Ideal Output Aktual (Performance = ${fmtDec1.format(m.performance * 100)}%)`,
+            min: m.netOperatingTime,
+            isLoss: false,
+            isHighlight: true,
+            badgeColor: 'bg-cyan-100 text-cyan-800'
+          },
+          {
+            name: '8. (-) Quality Loss',
+            category: 'Startup Reject, Process Defect & Rework',
+            min: -m.qualLossMin,
+            isLoss: true,
+            isHighlight: false,
+            badgeColor: 'bg-orange-100 text-orange-800'
+          },
+          {
+            name: '9. Fully Productive Time (FPT)',
+            category: `Waktu Produk Lolos Kualitas (OEE = ${fmtDec1.format(m.oee * 100)}% | TEEP = ${fmtDec1.format(m.teep * 100)}%)`,
+            min: m.fullyProductiveTime,
+            isLoss: false,
+            isFinal: true,
+            badgeColor: 'bg-emerald-100 text-emerald-800'
+          }
+        ];
+
+        const tbody = document.getElementById('breakdownTableBody');
+        tbody.innerHTML = rows.map((r) => {
+          const absMin = Math.abs(r.min);
+          const sign = r.isLoss ? (r.min < 0 ? '-' : (r.min > 0 ? '+' : '')) : '';
+          const pctShift = m.totalShift > 0 ? (absMin / m.totalShift) * 100 : 0;
+          const pctPpt = m.ppt > 0 ? (absMin / m.ppt) * 100 : 0;
+          const units = m.ict > 0 ? absMin / m.ict : 0;
+
+          let rowBg = 'hover:bg-slate-50/80';
+          let textColor = 'text-slate-800';
+          if (r.isFinal) {
+            rowBg = 'bg-emerald-50/70 font-bold';
+            textColor = 'text-emerald-900';
+          } else if (r.isHighlight) {
+            rowBg = 'bg-slate-50/70 font-semibold';
+          } else if (r.isLoss && r.min < 0) {
+            textColor = 'text-rose-700';
+          }
+
+          return `
+            <tr class="${rowBg} transition-colors">
+              <td class="py-3 px-4 sm:px-6 ${textColor}">${r.name}</td>
+              <td class="py-3 px-4">
+                <span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${r.badgeColor}">${r.category}</span>
+              </td>
+              <td class="py-3 px-4 text-right font-mono font-semibold ${textColor}">${sign}${fmtDec1.format(absMin)} mnt</td>
+              <td class="py-3 px-4 text-right font-mono text-slate-600">${sign}${fmtDec1.format(pctShift)}%</td>
+              <td class="py-3 px-4 text-right font-mono text-slate-600">${sign}${fmtDec1.format(pctPpt)}%</td>
+              <td class="py-3 px-4 sm:px-6 text-right font-mono font-semibold ${textColor}">${sign}${fmtDec1.format(units)} unit</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // =========================================================================
+      // 9. MASTER RENDER ORCHESTRATOR
+      // =========================================================================
+      function updateAll() {
+        sanitizeAndClampState();
+        const metrics = calculateMetrics(state);
+        syncInputsFromState(metrics);
+        updateKpiCards(metrics);
+        renderWaterfallChart(metrics);
+        updateDiagnosisAndSimulation(metrics);
+        updateBreakdownTable(metrics);
+        updatePresetButtonStyles();
+      }
+
+      function updatePresetButtonStyles() {
+        const btns = document.querySelectorAll('.preset-btn');
+        btns.forEach((btn) => {
+          const key = btn.getAttribute('data-preset');
+          if (key === activePresetKey) {
+            btn.className = 'preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-slate-900 text-white border-slate-900 shadow-sm';
+          } else {
+            btn.className = 'preset-btn px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-slate-100';
+          }
+        });
+      }
+
+      // =========================================================================
+      // 10. EVENT LISTENERS (TWO-WAY BINDING, PRESETS, SIMULATION, COPY)
+      // =========================================================================
+      function bindTwoWay(numEl, rngEl, stateKey, isFloat = false) {
+        rngEl.addEventListener('input', () => {
+          activePresetKey = null;
+          state[stateKey] = isFloat ? parseFloat(rngEl.value) : parseInt(rngEl.value, 10);
+          updateAll();
+        });
+
+        numEl.addEventListener('input', () => {
+          const raw = isFloat ? parseFloat(numEl.value) : parseInt(numEl.value, 10);
+          if (!isNaN(raw)) {
+            activePresetKey = null;
+            state[stateKey] = raw;
+            // Update calculations live without overwriting user's active typing box mid-keystroke
+            const tempState = { ...state };
+            sanitizeAndClampState();
+            const metrics = calculateMetrics(state);
+            updateKpiCards(metrics);
+            renderWaterfallChart(metrics);
+            updateDiagnosisAndSimulation(metrics);
+            updateBreakdownTable(metrics);
+            updatePresetButtonStyles();
+            // Keep slider in sync
+            rngEl.value = state[stateKey];
+            state = tempState;
+          }
+        });
+
+        numEl.addEventListener('change', () => {
+          activePresetKey = null;
+          state[stateKey] = isFloat ? parseFloat(numEl.value) : parseInt(numEl.value, 10);
+          updateAll();
+        });
+      }
+
+      bindTwoWay(inputs.numTotalShift, inputs.rngTotalShift, 'totalShift', false);
+      bindTwoWay(inputs.numPlannedStop, inputs.rngPlannedStop, 'plannedStop', false);
+      bindTwoWay(inputs.numDowntime, inputs.rngDowntime, 'downtime', false);
+      bindTwoWay(inputs.numCycleTime, inputs.rngCycleTime, 'idealCycleTime', true);
+      bindTwoWay(inputs.numTotalOutput, inputs.rngTotalOutput, 'totalOutput', false);
+      bindTwoWay(inputs.numRejectUnits, inputs.rngRejectUnits, 'rejectUnits', false);
+
+      // Preset Scenario Buttons
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          if (PRESETS[key]) {
+            activePresetKey = key;
+            state = { ...PRESETS[key] };
+            updateAll();
+            showToast(`Skenario dimuat: ${PRESETS[key].name}`);
+          }
+        });
+      });
+
+      // Reset Default Button
+      document.getElementById('btnResetDefault').addEventListener('click', () => {
+        activePresetKey = 'standard';
+        state = { ...PRESETS.standard };
+        updateAll();
+        showToast('Parameter dikembalikan ke Contoh Standar (OEE 78,0%)');
+      });
+
+      // Apply World-Class Simulation Button
+      document.getElementById('btnApplySimulation').addEventListener('click', () => {
+        if (pendingSimulationState) {
+          activePresetKey = null;
+          state = { ...pendingSimulationState };
+          updateAll();
+          showToast('Simulasi perbaikan World-Class diterapkan!');
+        }
+      });
+
+      // Copy Summary Report Button (using safe textarea + execCommand('copy'))
+      document.getElementById('btnCopyReport').addEventListener('click', () => {
+        sanitizeAndClampState();
+        const m = calculateMetrics(state);
+        const summaryText = [
+          '=== LAPORAN ANALISIS OEE (OVERALL EQUIPMENT EFFECTIVENESS) ===',
+          `Total Waktu Shift       : ${fmtInt.format(m.totalShift)} menit`,
+          `Planned Stop            : ${fmtInt.format(m.plannedStop)} menit`,
+          `Planned Production Time : ${fmtInt.format(m.ppt)} menit`,
+          `Downtime (Avail. Loss)  : ${fmtInt.format(m.downtime)} menit`,
+          `Operating Time          : ${fmtInt.format(m.ot)} menit`,
+          `Ideal Cycle Time        : ${fmtDec2.format(m.ict)} menit/unit (${fmtDec1.format(m.idealRatePerHour)} unit/jam)`,
+          `Total Output            : ${fmtInt.format(m.totalOutput)} unit (Good: ${fmtInt.format(m.goodUnits)}, Reject: ${fmtInt.format(m.rejectUnits)})`,
+          '-------------------------------------------------------------',
+          `Availability (A)        : ${fmtDec1.format(m.availability * 100)}% (Target WC: 90,0%)`,
+          `Performance (P)         : ${fmtDec1.format(m.performance * 100)}% (Target WC: 95,0%)`,
+          `Quality (Q)             : ${fmtDec1.format(m.quality * 100)}% (Target WC: 99,9%)`,
+          `OEE KESELURUHAN         : ${fmtDec1.format(m.oee * 100)}% (Target WC: 85,0%)`,
+          `TEEP (vs Total Shift)   : ${fmtDec1.format(m.teep * 100)}%`,
+          `Fully Productive Time   : ${fmtDec1.format(m.fullyProductiveTime)} menit`
+        ].join('\n');
+
+        const textArea = document.createElement('textarea');
+        textArea.value = summaryText;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Ringkasan laporan OEE berhasil disalin ke clipboard!');
+        } catch (err) {
+          showToast('Gagal menyalin teks ke clipboard.');
+        }
+        document.body.removeChild(textArea);
+      });
+
+      // Toast helper
+      let toastTimer = null;
+      function showToast(msg) {
+        const toast = document.getElementById('toastNotification');
+        document.getElementById('toastMessage').textContent = msg;
+        toast.classList.remove('translate-y-16', 'opacity-0');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.add('translate-y-16', 'opacity-0');
+        }, 2800);
+      }
+
+      // Initial render
+      window.addEventListener('DOMContentLoaded', updateAll);
+      updateAll();
+    })();
+  </script>
+</body>
+</html>
